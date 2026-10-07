@@ -1,3 +1,23 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from core.admin import SoftDeleteAdmin, restore_selected, log
+from .models import User, Notification
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    fieldsets = UserAdmin.fieldsets + (("Role", {"fields": ("role", "phone")}),)
+    add_fieldsets = UserAdmin.add_fieldsets + (("Role", {"fields": ("role", "phone")}),)
+    list_display = ("username", "first_name", "last_name", "role", "is_active")
+    list_filter = ("role", "is_active")
+    actions = [restore_selected]
 
-# Register your models here.
+    def delete_model(self, request, obj):
+        log(request, "DELETE", obj)
+        obj.delete()
+
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            log(request, "DELETE", obj)
+            obj.delete()
+@admin.register(Notification)
+class NotificationAdmin(SoftDeleteAdmin):
+    list_display = ("user", "title", "is_read", "created_at", "is_active")
