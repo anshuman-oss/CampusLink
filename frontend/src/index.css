@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@theme {
+  --color-navy: #0b1f3a;
+  --color-brand: #14b8a6;
+  --color-gold: #f59e0b;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-slate-200);
+  }
+
+  body {
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-800);
+    font-family: var(--font-sans);
+  }
+}

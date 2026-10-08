@@ -1,9 +1,6 @@
-# students/admin.py
 from django.contrib import admin
 from core.admin import SoftDeleteAdmin
 from .models import StudentProfile
-
-
 @admin.register(StudentProfile)
 class StudentProfileAdmin(SoftDeleteAdmin):
     list_display = ("roll_no", "branch", "cgpa", "readiness_score", "readiness_level",

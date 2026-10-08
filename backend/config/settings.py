@@ -11,28 +11,43 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 from pathlib import Path
 from datetime import timedelta
-SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(hours=8)}
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_THROTTLE_RATES": {"auth": "30/min"},
+    "COERCE_DECIMAL_TO_STRING": False,
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-c5=rd--de9=98e7gt^5!h0wk*i)mgz%=6p51j3^o*c2t&roui5'
 DEBUG = True
 ALLOWED_HOSTS = []
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    'accounts',
-    'analytics',
-    'drives',
-    'engine',
-    'jobs',
-    'offers',
-    'students',
-    'core'
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
+    "core",
+    "accounts",
+    "students",
+    "jobs",
+    "drives",
+    "offers",
+    "analytics",
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -98,12 +113,4 @@ MAILERS = {
     "default": {
         "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
     }
-}
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "COERCE_DECIMAL_TO_STRING": False,
 }

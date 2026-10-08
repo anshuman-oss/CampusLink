@@ -3,15 +3,12 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from students.models import StudentProfile
 
-
 def feats(p):
     return [float(p.cgpa), p.readiness_score, p.mock_score, p.aptitude_score, len(p.skills), p.backlogs]
-
-
 def at_risk(threshold=0.45):
     hist = list(StudentProfile.objects.filter(batch__lt=2026))
     if len({p.placed for p in hist}) < 2:
-        return []                                   # need both placed and unplaced examples
+       return []                            
     model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
     model.fit([feats(p) for p in hist], [int(p.placed) for p in hist])
     cur = list(StudentProfile.objects.filter(batch=2026, placed=False).select_related("user"))

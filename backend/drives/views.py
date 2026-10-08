@@ -8,16 +8,13 @@ from .models import Drive
 from .scheduler import find_conflicts, suggest_slot
 from .serializers import DriveSerializer
 
-
 class DriveViewSet(viewsets.ModelViewSet):
     queryset = Drive.objects.select_related("job__company")
     serializer_class = DriveSerializer
-
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
             return [IsAuthenticated()]
         return [IsOfficer()]
-
     def create(self, request, *args, **kwargs):
         s = self.get_serializer(data=request.data)
         s.is_valid(raise_exception=True)

@@ -8,7 +8,6 @@ from engine.nlp import parse_jd
 from .models import JobDescription, Match
 from .serializers import JobSerializer, MatchSerializer
 
-
 class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
     permission_classes = [IsRecruiter]
@@ -24,7 +23,7 @@ class JobViewSet(viewsets.ModelViewSet):
             raise ValidationError("Only recruiter accounts with a company can post jobs.")
         parsed = parse_jd(self.request.data.get("description", ""))
         extra = {k: v for k, v in parsed.items() if k not in self.request.data}
-        serializer.save(company=company, **extra)          # NLP fills skills, CGPA, branches
+        serializer.save(company=company, **extra)
 
     @action(detail=True, methods=["post"])
     def match(self, request, pk=None):

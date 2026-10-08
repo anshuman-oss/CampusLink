@@ -8,6 +8,13 @@ class User(AbstractUser):
              ("recruiter", "Recruiter"), ("mentor", "Mentor")]
     role = models.CharField(max_length=12, choices=ROLES, default="student")
     phone = models.CharField(max_length=15, blank=True)
+    is_approved = models.BooleanField(default=True)    # recruiters start as False
+
+    def save(self, *args, **kwargs):
+        if self.is_superuser:                           # superusers are always officers
+            self.role = "officer"
+            self.is_approved = True
+        super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):   # soft delete: also blocks login
         self.is_active = False

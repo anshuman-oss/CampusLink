@@ -4,7 +4,6 @@ def level(s):
     if s < 80: return "Ready"
     return "Highly Employable"
 
-
 def readiness(p):
     sp = min(len(p.skills) / 10, 1) * 0.6 + min(len(p.projects) / 3, 1) * 0.4
     parts = {
@@ -18,11 +17,9 @@ def readiness(p):
     total = round(sum(parts.values()), 1)
     return total, level(total), {k: round(v, 1) for k, v in parts.items()}
 
-
 def student_text(p):
     projects = [x.get("title", "") + " " + x.get("desc", "") for x in p.projects]
     return " ".join(list(p.skills) + list(p.certifications) + projects) or "no information"
-
 
 def eligibility(p, job):
     r = []
@@ -33,7 +30,6 @@ def eligibility(p, job):
     if p.backlogs > job.max_backlogs:
         r.append(f"{p.backlogs} backlog(s) exceed the limit of {job.max_backlogs}")
     return r
-
 
 def fit(p, job, sem):
     req, have = set(job.required_skills), set(p.skills)
@@ -49,13 +45,11 @@ def fit(p, job, sem):
     }
     return round(sum(parts.values()), 1), {k: round(v, 1) for k, v in parts.items()}, matched, missing
 
-
 COURSES = {
     "aws": "AWS Cloud Practitioner (free labs)", "docker": "Docker 101 and containerise one project",
     "sql": "SQL practice: 30 queries on HackerRank", "react": "Build a React CRUD app",
     "machine learning": "Andrew Ng ML course and one Kaggle notebook", "git": "Git and GitHub basics",
 }
-
 
 def explain(p, job, score, parts, matched, missing, reasons):
     if reasons:

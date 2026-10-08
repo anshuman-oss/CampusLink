@@ -1,13 +1,9 @@
-# offers/models.py
 from django.db import models
 from core.models import SoftDeleteModel
-
-
 class Offer(SoftDeleteModel):
     STATUS = [("issued", "Issued"), ("accepted", "Accepted"), ("deferred", "Deferred"),
               ("withdrawn", "Withdrawn"), ("joined", "Joined")]
     DOCS = [("pending", "Pending"), ("submitted", "Submitted"), ("verified", "Verified")]
-
     student = models.ForeignKey("students.StudentProfile", on_delete=models.CASCADE,
                                 related_name="offers")
     job = models.ForeignKey("jobs.JobDescription", on_delete=models.CASCADE,
@@ -21,7 +17,7 @@ class Offer(SoftDeleteModel):
     doc_deadline = models.DateField(null=True, blank=True)
     joining_date = models.DateField(null=True, blank=True)
     remarks = models.CharField(max_length=200, blank=True)
-
+    
     class Meta(SoftDeleteModel.Meta):
         ordering = ["-created_at"]
 

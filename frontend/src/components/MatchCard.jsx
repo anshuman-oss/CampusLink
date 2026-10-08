@@ -6,7 +6,6 @@ const badge = {
   waitlist: "bg-amber-100 text-amber-700",
   below_threshold: "bg-rose-100 text-rose-700",
 };
-
 export default function MatchCard({ m }) {
   const ex = m.explanation || {};
   return (

@@ -3,10 +3,8 @@ from students.models import StudentProfile
 from jobs.models import Match
 from .nlp import embed
 from .scoring import student_text, eligibility, fit, explain, level
-
-
 def run_match(job):
-    students = list(StudentProfile.objects.filter(consent_given=True))   # active students only
+    students = list(StudentProfile.objects.filter(consent_given=True))  
     if not students:
         return 0
     sims = util.cos_sim(embed([job.description]),

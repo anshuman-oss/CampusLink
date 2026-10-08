@@ -4,8 +4,14 @@ from . import views
 
 urlpatterns = [
     path("login/", views.LoginView.as_view()),
+    path("register/", views.RegisterView.as_view()),
     path("refresh/", TokenRefreshView.as_view()),
+    path("logout/", views.LogoutView.as_view()),
     path("me/", views.MeView.as_view()),
+    path("change-password/", views.ChangePasswordView.as_view()),
     path("notifications/", views.NotificationListView.as_view()),
     path("notifications/<int:pk>/read/", views.NotificationReadView.as_view()),
+    path("pending/", views.PendingView.as_view()),
+    path("approve/<int:pk>/", views.ApproveView.as_view()),
+    path("staff/", views.StaffView.as_view()),
 ]

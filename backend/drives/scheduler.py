@@ -1,13 +1,9 @@
 from datetime import datetime, timedelta, time
 from jobs.models import Match
 from .models import Drive
-
-
 def _students(drive):
     return set(Match.objects.filter(job=drive.job, status="shortlisted")
                .values_list("student_id", flat=True))
-
-
 def find_conflicts(drive):
     out, mine = [], _students(drive)
     others = Drive.objects.filter(date=drive.date, status="scheduled").exclude(pk=drive.pk)
@@ -21,8 +17,6 @@ def find_conflicts(drive):
             if common:
                 out.append({"type": "STUDENT", "with": o.job.title, "count": len(common)})
     return out
-
-
 def suggest_slot(drive, days=5, step=30):
     dur = (datetime.combine(drive.date, drive.end_time) -
            datetime.combine(drive.date, drive.start_time))

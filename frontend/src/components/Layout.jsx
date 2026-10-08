@@ -1,30 +1,54 @@
 import { useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Briefcase, CalendarClock, FileCheck2, AlertTriangle, Bell, LogOut, User } from "lucide-react";
+import { NavLink, useNavigate, Link } from "react-router-dom";
+import { LayoutDashboard, Briefcase, CalendarClock, FileCheck2, AlertTriangle, Bell, LogOut, GraduationCap, UserCircle, Users, ShieldCheck } from "lucide-react";
 import api from "../api";
+import { logout, getRole, HOME } from "../auth";
 
+const PROFILE = ["/profile", "My Profile", UserCircle];
 const NAV = {
-  student: [["/student", "My Readiness", User]],
-  recruiter: [["/recruiter", "Jobs & Matches", Briefcase]],
-  officer: [["/officer", "Dashboard", LayoutDashboard], ["/recruiter", "Jobs & Matches", Briefcase],
-            ["/officer/drives", "Drives", CalendarClock], ["/officer/offers", "Offers", FileCheck2],
-            ["/officer/at-risk", "At-Risk Students", AlertTriangle]],
-  mentor: [["/officer", "Dashboard", LayoutDashboard], ["/officer/at-risk", "At-Risk Students", AlertTriangle]],
+  student: [["/student", "My Readiness", GraduationCap], PROFILE],
+  recruiter: [["/recruiter", "Jobs & Matches", Briefcase], PROFILE],
+  officer: [
+    ["/officer", "Dashboard", LayoutDashboard],
+    ["/officer/students", "Students", Users],
+    ["/officer/accounts", "Accounts", ShieldCheck],
+    ["/recruiter", "Jobs & Matches", Briefcase],
+    ["/officer/drives", "Drives", CalendarClock],
+    ["/officer/offers", "Offers", FileCheck2],
+    ["/officer/at-risk", "At-Risk Students", AlertTriangle],
+    PROFILE,
+  ],
+  mentor: [["/officer", "Dashboard", LayoutDashboard], ["/officer/at-risk", "At-Risk Students", AlertTriangle], PROFILE],
 };
+const ROLE_LABEL = { student: "Student", recruiter: "Recruiter", officer: "Placement Officer", mentor: "Mentor" };
 
 export default function Layout({ children }) {
-  const role = localStorage.getItem("role");
-  const name = localStorage.getItem("name");
   const navigate = useNavigate();
+  const [role, setRole] = useState(getRole());
+  const [name, setName] = useState(localStorage.getItem("name") || "");
   const [notes, setNotes] = useState([]);
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    api.get("/auth/me/").then(({ data }) => {
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("name", data.name);
+      setName(data.name);
+      if (data.role !== role) {
+        setRole(data.role);
+        navigate(HOME[data.role], { replace: true });
+      }
+    }).catch(() => {});
+  }, []);
+
   const load = () => api.get("/auth/notifications/").then((r) => setNotes(r.data)).catch(() => {});
   useEffect(() => { load(); }, []);
-  const unread = notes.filter((n) => !n.is_read).length;
 
+  const unread = notes.filter((n) => !n.is_read).length;
   const read = async (id) => { await api.post(`/auth/notifications/${id}/read/`); load(); };
-  const logout = () => { localStorage.clear(); navigate("/"); };
+  const doLogout = async () => { await logout(); navigate("/"); };
+  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+  const links = NAV[role] || NAV.student;
 
   return (
     <div className="flex min-h-screen">
@@ -33,27 +57,29 @@ export default function Layout({ children }) {
           <h1 className="text-xl font-bold tracking-wide text-white">Campus<span className="text-brand">Link</span></h1>
           <p className="text-[11px] text-slate-400">by Team HireSync</p>
         </div>
-        <nav className="flex-1 space-y-1 px-3">
-          {NAV[role].map(([to, label, Icon]) => (
+        <nav className="flex-1 space-y-1 overflow-auto px-3">
+          {links.map(([to, label, Icon]) => (
             <NavLink key={to + label} to={to} end
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                  isActive ? "bg-brand text-white" : "hover:bg-white/10"}`}>
+                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${isActive ? "bg-brand text-white" : "hover:bg-white/10"}`}>
               <Icon size={18} /> {label}
             </NavLink>
           ))}
         </nav>
-        <button onClick={logout} className="m-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-white/10">
+        <button onClick={doLogout} className="m-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-white/10">
           <LogOut size={18} /> Logout
         </button>
       </aside>
 
       <div className="ml-60 flex-1">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white/80 px-8 py-4 backdrop-blur">
-          <div>
-            <p className="text-sm font-semibold text-navy">{name}</p>
-            <p className="text-xs capitalize text-slate-500">{role === "officer" ? "Placement Officer" : role}</p>
-          </div>
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 px-8 py-3 backdrop-blur">
+          <Link to="/profile" className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{initials}</span>
+            <span>
+              <p className="text-sm font-semibold text-navy">{name}</p>
+              <p className="text-xs text-slate-500">{ROLE_LABEL[role]}</p>
+            </span>
+          </Link>
           <div className="relative">
             <button onClick={() => setOpen(!open)} className="relative rounded-full bg-slate-100 p-2.5 hover:bg-slate-200">
               <Bell size={18} />

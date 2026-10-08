@@ -19,22 +19,17 @@ SKILLS = {
     "linux": ["linux", "bash"], "testing": ["testing", "unit test", "pytest"],
     "excel": ["excel", "power bi"],
 }
-
 _nlp = spacy.load("en_core_web_sm", disable=["ner", "parser", "lemmatizer"])
 _matcher = PhraseMatcher(_nlp.vocab, attr="LOWER")
 for canon, aliases in SKILLS.items():
     _matcher.add(canon, [_nlp.make_doc(a) for a in aliases])
-
-
 def extract_skills(text):
     doc = _nlp.make_doc(text or "")
     return sorted({_nlp.vocab.strings[mid] for mid, _, _ in _matcher(doc)})
 
-
 BRANCHES = {"CSE": ["cse", "computer science"], "IT": ["information technology"],
             "ECE": ["ece", "electronics"], "EEE": ["eee", "electrical"],
             "ME": ["mechanical"], "CE": ["civil"]}
-
 
 def parse_jd(text):
     t = (text or "").lower()
@@ -51,13 +46,9 @@ def parse_jd(text):
     if br:
         out["allowed_branches"] = br
     return out
-
-
 _model = None
-
-
 def embed(texts):
     global _model
     if _model is None:
-        _model = SentenceTransformer("all-MiniLM-L6-v2")   # downloads ~90 MB the first time
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
     return _model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)

@@ -2,10 +2,8 @@ from django.conf import settings
 from django.db import models
 from core.models import SoftDeleteModel
 
-
 class Company(SoftDeleteModel):
     soft_cascade = ("jobs",)
-
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name="company")
     name = models.CharField(max_length=100)
@@ -17,13 +15,11 @@ class Company(SoftDeleteModel):
 
     def __str__(self):
         return self.name
-
-
+    
 class JobDescription(SoftDeleteModel):
     soft_cascade = ("matches", "drives", "offers")
     TYPES = [("fulltime", "Full-time"), ("internship", "Internship")]
     STATUS = [("open", "Open"), ("closed", "Closed")]
-
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="jobs")
     title = models.CharField(max_length=120)
     description = models.TextField()
@@ -33,17 +29,16 @@ class JobDescription(SoftDeleteModel):
     openings = models.PositiveSmallIntegerField(default=1)
     min_cgpa = models.DecimalField(max_digits=4, decimal_places=2, default=6.0)
     max_backlogs = models.PositiveSmallIntegerField(default=0)
-    allowed_branches = models.JSONField(default=list, blank=True)   # [] means all branches
-    required_skills = models.JSONField(default=list, blank=True)    # filled by the NLP parser
+    allowed_branches = models.JSONField(default=list, blank=True) 
+    required_skills = models.JSONField(default=list, blank=True)   
     mock_benchmark = models.PositiveSmallIntegerField(default=60)
     ctc_lpa = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-
+    
     class Meta(SoftDeleteModel.Meta):
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.company.name} - {self.title}"
-
 
 class Match(SoftDeleteModel):
     job = models.ForeignKey(JobDescription, on_delete=models.CASCADE, related_name="matches")
@@ -52,7 +47,7 @@ class Match(SoftDeleteModel):
     fit_score = models.FloatField()
     level = models.CharField(max_length=20)
     eligible = models.BooleanField(default=True)
-    status = models.CharField(max_length=20)    # shortlisted / waitlist / below_threshold
+    status = models.CharField(max_length=20)  
     explanation = models.JSONField(default=dict, blank=True)
 
     class Meta(SoftDeleteModel.Meta):
