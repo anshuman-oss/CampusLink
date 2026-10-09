@@ -11,6 +11,33 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
+
+EMAIL_USER = os.environ.get("EMAIL_USER", "")
+EMAIL_PASS = os.environ.get("EMAIL_APP_PASSWORD", "")
+
+if EMAIL_USER and EMAIL_PASS:                 # real emails through Gmail
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {
+                "host": "smtp.gmail.com",
+                "port": 587,
+                "username": EMAIL_USER,
+                "password": EMAIL_PASS,
+                "use_tls": True,
+                "timeout": 15,
+            },
+        }
+    }
+    NOTIFY_FROM = f"CampusLink <{EMAIL_USER}>"
+else:                                         # no .env: print emails in the terminal
+    MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
+    NOTIFY_FROM = "anshumantripathy41@gmail.com"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
@@ -27,7 +54,6 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
-BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-c5=rd--de9=98e7gt^5!h0wk*i)mgz%=6p51j3^o*c2t&roui5'
 DEBUG = True
 ALLOWED_HOSTS = []
@@ -110,7 +136,5 @@ CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
-    }
+    "default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"},
 }

@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Notification, User
 from .permissions import IsOfficer
+from accounts.mailer import send_email
 from .serializers import (NotificationSerializer, ProfileUpdateSerializer, RegisterSerializer,
                           StaffCreateSerializer, strong_password)
 
@@ -185,3 +186,19 @@ class LogoutView(APIView):
         except TokenError:
             pass                       # already invalid: nothing to do
         return Response({"detail": "Logged out."})
+    
+# @action(detail=True, methods=["post"], url_path="test-email")
+# def test_email(self, request, pk=None):
+#         """Officer: send a test email to one student and report the real result."""
+#         p = self.get_object()
+#         to = p.user.email
+#         if not to:
+#             return Response({"detail": "This student has no email address."}, status=400)
+#         try:
+#             send_email(to, "CampusLink test email",
+#                        f"Hello {p.user.first_name or p.roll_no},\n\nThis is a test email from CampusLink. "
+#                        "If you can read this, email notifications work for your account.")
+#         except Exception as e:
+#             return Response({"detail": f"The email could not be sent: {e}"}, status=502)
+#         return Response({"console": False, "detail":
+#             f"Test email sent to {to}. Check the inbox, and the Spam folder, within a minute."})   

@@ -1,18 +1,24 @@
 import csv
 import io
+import logging
 import pdfplumber
+from django.conf import settings
+from django.core.mail import send_mail
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from accounts.permissions import IsOfficer, IsStaffRole, IsStudent
-from engine.nlp import extract_skills
+from engine.matcher import rematch_student
+from engine.nlp import SKILLS, extract_skills
 from engine.scoring import readiness
 from jobs.models import Match
 from .models import StudentProfile
 from .serializers import RosterSerializer, StudentSerializer
 from .services import refresh_readiness
+
+log = logging.getLogger(__name__)
 
 ROLES = {
     "Backend Developer": ["python", "django", "sql", "rest api", "git", "docker"],
@@ -22,24 +28,42 @@ ROLES = {
 }
 
 
+def rematch(p):
+    try:
+        rematch_student(p)
+    except Exception:
+        log.exception("Could not refresh matches for %s", p.roll_no)
+
+
+def me_payload(p):
+    data = StudentSerializer(p).data
+    data["breakdown"] = readiness(p)[2]
+    data["skill_options"] = sorted(SKILLS)
+    return data
+
+
 class MeView(APIView):
     permission_classes = [IsStudent]
 
     def get(self, request):
-        p = request.user.profile
-        data = StudentSerializer(p).data
-        data["breakdown"] = readiness(p)[2]
-        return Response(data)
+        return Response(me_payload(request.user.profile))
 
     def patch(self, request):
         p = request.user.profile
         s = StudentSerializer(p, data=request.data, partial=True)
         s.is_valid(raise_exception=True)
+        v = s.validated_data
+        if "skills" in v:                      # only skills the matching engine understands
+            v["skills"] = [x for x in dict.fromkeys(str(i).lower().strip() for i in v["skills"]) if x in SKILLS]
+        if "certifications" in v:
+            v["certifications"] = [str(c).strip()[:80] for c in v["certifications"] if str(c).strip()][:20]
+        if "projects" in v:
+            v["projects"] = [{"title": str(x.get("title", "")).strip()[:80], "desc": str(x.get("desc", "")).strip()[:300]}
+                             for x in v["projects"] if isinstance(x, dict) and str(x.get("title", "")).strip()][:10]
         s.save()
-        data = StudentSerializer(p).data
-        data["breakdown"] = refresh_readiness(p)
-        data["readiness_score"], data["readiness_level"] = p.readiness_score, p.readiness_level
-        return Response(data)
+        refresh_readiness(p)
+        rematch(p)
+        return Response(me_payload(p))
 
 
 class ResumeView(APIView):
@@ -60,6 +84,7 @@ class ResumeView(APIView):
         p.skills = sorted(set(p.skills) | set(extract_skills(text)))
         p.save()
         parts = refresh_readiness(p)
+        rematch(p)
         return Response({"skills": p.skills, "readiness": p.readiness_score,
                          "level": p.readiness_level, "breakdown": parts})
 
@@ -108,7 +133,29 @@ class RosterViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_destroy(self, inst):
-        inst.user.delete()               # soft delete: blocks login and hides the profile
+        inst.user.delete()                  # soft delete: blocks login and hides the profile
+
+    @action(detail=True, methods=["post"], url_path="test-email")
+    def test_email(self, request, pk=None):
+        """Officer: send a test email to one student and report the real result."""
+        p = self.get_object()
+        to = p.user.email
+        if not to:
+            return Response({"detail": "This student has no email address."}, status=400)
+        backend = settings.MAILERS["default"]["BACKEND"]
+        try:
+            send_mail("CampusLink test email",
+                      f"Hello {p.user.first_name or p.roll_no},\n\nThis is a test email from CampusLink. "
+                      "If you can read this, email notifications work for your account.",
+                      getattr(settings, "NOTIFY_FROM", "placements@campuslink.local"), [to])
+        except Exception as e:
+            return Response({"detail": f"The email could not be sent: {e}"}, status=502)
+        if "console" in backend:
+            return Response({"console": True, "detail":
+                f"Email mode is 'console', so nothing was delivered to {to}. The message was printed in the "
+                "server terminal. Add your Gmail details to the .env file to send real emails."})
+        return Response({"console": False, "detail":
+            f"Test email sent to {to}. Check the inbox, and the Spam folder, within a minute."})
 
     @action(detail=False, methods=["post"], url_path="import", parser_classes=[MultiPartParser, FormParser])
     def import_csv(self, request):
@@ -122,7 +169,7 @@ class RosterViewSet(viewsets.ModelViewSet):
         added, errors = 0, []
         for i, r in enumerate(rows, start=2):
             data = {k.strip(): (v or "").strip() for k, v in r.items() if k}
-            data = {k: v for k, v in data.items() if v != ""}        # blank cells use defaults
+            data = {k: v for k, v in data.items() if v != ""}
             s = RosterSerializer(data=data)
             if s.is_valid():
                 s.save()

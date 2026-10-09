@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Mail, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
 import api from "../../api";
 import { errText } from "../../auth";
 
@@ -9,6 +9,7 @@ const EMPTY = { roll_no: "", first_name: "", last_name: "", email: "", branch: "
                 batch: 2026, aptitude_score: 0, mock_score: 0, soft_score: 0, mentor: "" };
 const LEVEL = { "Not Ready": "bg-rose-100 text-rose-700", Developing: "bg-amber-100 text-amber-700",
                 Ready: "bg-teal-100 text-teal-700", "Highly Employable": "bg-emerald-100 text-emerald-700" };
+const TONE = { ok: "bg-emerald-50 text-emerald-700", warn: "bg-amber-50 text-amber-800", err: "bg-rose-50 text-rose-700" };
 
 function Field({ label, children }) {
   return <label className="block text-xs font-medium text-slate-600">{label}<div className="mt-1">{children}</div></label>;
@@ -85,6 +86,8 @@ export default function Students() {
   const [branch, setBranch] = useState("");
   const [modal, setModal] = useState(null);
   const [report, setReport] = useState(null);
+  const [mail, setMail] = useState(null);        // result of the last test email
+  const [sending, setSending] = useState(null);  // id of the student an email is being sent to
 
   const load = () => api.get("/students/roster/").then((r) => setRows(r.data));
   useEffect(() => {
@@ -96,6 +99,15 @@ export default function Students() {
     if (!window.confirm(`Remove ${s.first_name} ${s.last_name} (${s.roll_no})? They will no longer be able to log in.`)) return;
     await api.delete(`/students/roster/${s.id}/`);
     load();
+  };
+
+  const testMail = async (s) => {
+    setSending(s.id); setMail(null);
+    try {
+      const { data } = await api.post(`/students/roster/${s.id}/test-email/`);
+      setMail({ tone: data.console ? "warn" : "ok", t: data.detail });
+    } catch (x) { setMail({ tone: "err", t: errText(x) }); }
+    setSending(null);
   };
 
   const upload = async (e) => {
@@ -149,6 +161,13 @@ export default function Students() {
         </div>
       )}
 
+      {mail && (
+        <p className={`flex items-start justify-between gap-4 rounded-xl p-4 text-sm ${TONE[mail.tone]}`}>
+          <span>{mail.t}</span>
+          <button onClick={() => setMail(null)} className="shrink-0 text-xs font-semibold underline">Dismiss</button>
+        </p>
+      )}
+
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-3 text-slate-400" />
@@ -175,8 +194,12 @@ export default function Students() {
                 <td className="text-xs">{s.mentor_name || "-"}</td>
                 <td className="text-xs">{s.activated ? <span className="text-emerald-700">Activated</span> : <span className="text-amber-700">Awaiting activation</span>}</td>
                 <td className="whitespace-nowrap pr-3 text-right">
-                  <button onClick={() => setModal(s)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Pencil size={15} /></button>
-                  <button onClick={() => remove(s)} className="rounded-lg p-2 text-rose-500 hover:bg-rose-50"><Trash2 size={15} /></button>
+                  <button onClick={() => testMail(s)} disabled={sending === s.id} title="Send a test email to this student"
+                    className="rounded-lg p-2 text-teal-600 hover:bg-teal-50 disabled:opacity-50">
+                    {sending === s.id ? <span className="text-xs">Sending...</span> : <Mail size={15} />}
+                  </button>
+                  <button onClick={() => setModal(s)} title="Edit" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Pencil size={15} /></button>
+                  <button onClick={() => remove(s)} title="Remove" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50"><Trash2 size={15} /></button>
                 </td>
               </tr>
             ))}

@@ -39,7 +39,7 @@ export default function Layout({ children }) {
         navigate(HOME[data.role], { replace: true });
       }
     }).catch(() => {});
-  }, []);
+  }, [role, navigate]);
 
   const load = () => api.get("/auth/notifications/").then((r) => setNotes(r.data)).catch(() => {});
   useEffect(() => { load(); }, []);
